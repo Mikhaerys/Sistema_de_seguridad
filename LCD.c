@@ -104,8 +104,7 @@ void LCD_Char(unsigned char dat)
 
 void LCD_String(const char *msg)
 {
-	while((*msg)!=0)
-	{		
+	while((*msg)!=0){		
 	  LCD_Char(*msg);
 	  msg++;	
     }
@@ -115,8 +114,7 @@ void LCD_String(const char *msg)
 void LCD_String_xy(char row,char pos,const char *msg)
 {
     char location=0;
-    if(row<=1)
-    {
+    if(row<=1){
         location=(0x80) | ((pos) & 0x0f);  /*Print message on 1st row and desired location*/
         LCD_Command(location);
     }
