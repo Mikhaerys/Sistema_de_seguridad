@@ -26,20 +26,23 @@ intended publication of this material.
 #include "LCD.h"
 #include "KEYPAD.h"
 #include "SENSOR.h"
+#include "ADC.h"
 
 //Fila salida del micro entrada del teclado
 //Columna entrada del micro salida del teclado
 
 enum State{
+    Ambiental,
     Seguridad,
     Monitoreo,
     Bloqueado,
-    Alarma
+    Alarma_Seguridad,
+    Alarma_Ambiental
 };
 
 enum State Estado = Seguridad;
 
-const char password[5] ={'1','2','3','4',0};
+const char password[5] = {'1','2','3','4',0};
 char pass_user[5];
 unsigned char idx = 0;
 
@@ -50,24 +53,35 @@ unsigned char intentos = 3;
 
 char buffer [17];
 
+int value_potenciometro;
+int value_temperature;
+int value_protocell;
+int tempCelsius;
+
+void function_ambiental(void);
 void function_seguridad(void);
 void function_monitoreo(void);
 void function_Bloqueado(void);
-void function_alarma(void);
+void function_alarma_seguridad(void);
+void function_alarma_ambiental(void);
 
 
 void main() {
+
+    //Configura Fosc = 8Mhz interno, Fuente de Fosc del sistema = interno
+    OSCCON = 0x71; //Configura oscilador interno (FOSC = 8Mhz)
+    TRISD = 0x00;// salida puerto D
+    TRISA0 = 1;
+    ANSEL = 0x01; //  Configura el Puerto como Entrada Anal?gica.
     
     TRISE = 0;
     PORTE = 0x00;
-    
-    //Configura Fosc = 8Mhz interno, Fuente de Fosc del sistema = interno
-    OSCCON = 0x71; //Configura oscilador interno (FOSC = 8Mhz)
      
     LCD_Init(); //Inicializa el LCD
     keypad_init(); //Inicializa el keypad
+    adc_begin();
     
-     TRISC = 0x07;
+    TRISC = 0x07;
     
     var_sensor_ir = SENSOR_IR;
     var_sensor_hall = SENSOR_HALL;
@@ -83,20 +97,49 @@ void main() {
         else if(Estado == Bloqueado){
             function_Bloqueado();
         }
-        else if(Estado == Alarma){
-            function_alarma();
+        else if(Estado == Alarma_Seguridad){
+            function_alarma_seguridad();
         }
-
+        else if(Estado == Ambiental){
+            function_ambiental();
+        }
+        else if(Estado == Alarma_Ambiental){
+            function_alarma_ambiental();
+        }
+        
     }
     
 }
 
+void function_ambiental(void){
+    value_potenciometro = adc_conversion(0);
+    value_temperature = adc_conversion(1);
+    tempCelsius = convertir_temperature(value_temperature);
+    value_protocell = adc_conversion(4);   
+    
+    int n = sprintf(buffer, "ir=%d,hl=%d,mt=%d", value_potenciometro ,tempCelsius ,value_protocell);
+    LCD_String_xy(1,0,buffer);
+    __delay_ms(3000); 
+    LCD_Clear();
+    
+    if(tempCelsius > 30){
+        Estado = Alarma_Ambiental;
+    }
+    else{
+        Estado = Monitoreo;
+    }
+}
+
 void function_monitoreo(void){
     if(monitoring_sensor() == 1){
-        Estado = Alarma;
+        Estado = Alarma_Seguridad;
         int n = sprintf(buffer, "ir=%d,hl=%d,mt=%d", var_sensor_ir,var_sensor_hall,var_sensor_metal);
         LCD_String_xy(0,0,buffer);
         __delay_ms(2000);     
+    }
+    else{
+        __delay_ms(2000);
+        Estado = Ambiental;
     }
 }
 
@@ -143,6 +186,7 @@ void function_seguridad(void){
             idx = 0;
             PORTE = 0x00;
 }
+
 void function_Bloqueado (void){
     LCD_Clear();
     LCD_String_xy(0,0,"Sistema Bloqueado");
@@ -152,10 +196,25 @@ void function_Bloqueado (void){
     Estado = Seguridad;
 }
 
-void function_alarma(void){
+void function_alarma_seguridad(void){
     LCD_Clear();
     LCD_String_xy(0,0,"SE TE ESTAN");
     LCD_String_xy(0,1,"METIENDO");
+    
+    for(int i = 0; i == 5; i++){
+        PORTE = 0x04;
+        __delay_ms(1000);
+        PORTE = 0x00;
+        __delay_ms(1000);
+    }
+    __delay_ms(2000);
+    LCD_Clear();
+    Estado = Monitoreo;
+}
+
+void function_alarma_ambiental(void){   
+    LCD_Clear();
+    LCD_String_xy(0,0,"ALARMA AMBIENTE");
     for(int i = 0; i == 5; i++){
         PORTE = 0x04;
         __delay_ms(1000);
@@ -163,5 +222,5 @@ void function_alarma(void){
         __delay_ms(1000);
     }
     LCD_Clear();
-    Estado = Monitoreo;
+    Estado = Ambiental;
 }

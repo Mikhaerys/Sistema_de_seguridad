@@ -8,17 +8,17 @@
 #ifndef SENSOR_H
 #define	SENSOR_H
 
-#define	SENSOR_IR RC1
-#define	SENSOR_HALL RC0
-#define	SENSOR_METAL RC2
-
-unsigned char monitoring_sensor(void);
 
 #ifdef	__cplusplus
 extern "C" {
 #endif
 
+#define	SENSOR_IR RC1
+#define	SENSOR_HALL RC0
+#define	SENSOR_METAL RC2
 
+unsigned char monitoring_sensor(void);
+    
 #ifdef	__cplusplus
 }
 #endif
