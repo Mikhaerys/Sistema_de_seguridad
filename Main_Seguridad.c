@@ -58,6 +58,14 @@ int value_temperature;
 int value_protocell;
 int tempCelsius;
 
+unsigned long  count_timer_lms = 0;
+int init_time = 0;
+int end_time = 0;
+#define Pulse PORTB
+#define INTERVAL_DELAY 5000
+
+void Timer1_start();
+
 void function_ambiental(void);
 void function_seguridad(void);
 void function_monitoreo(void);
@@ -131,16 +139,17 @@ void function_ambiental(void){
 }
 
 void function_monitoreo(void){
+    
+    
     if(monitoring_sensor() == 1){
         Estado = Alarma_Seguridad;
         int n = sprintf(buffer, "ir=%d,hl=%d,mt=%d", var_sensor_ir,var_sensor_hall,var_sensor_metal);
-        LCD_String_xy(0,0,buffer);
-        __delay_ms(2000);     
+        LCD_String_xy(0,0,buffer);   
     }
     else{
-        __delay_ms(2000);
         Estado = Ambiental;
     }
+    __delay_ms(2000);
 }
 
 void function_seguridad(void){
@@ -182,9 +191,9 @@ void function_seguridad(void){
         }
         
         __delay_ms(2000);
-            LCD_Clear();
-            idx = 0;
-            PORTE = 0x00;
+        LCD_Clear();
+        idx = 0;
+        PORTE = 0x00;
 }
 
 void function_Bloqueado (void){
@@ -192,22 +201,22 @@ void function_Bloqueado (void){
     LCD_String_xy(0,0,"Sistema Bloqueado");
     PORTE = 0x04;
     __delay_ms(10000);
+    PORTE = 0x00;
+    LCD_Clear();
     intentos = 3;
     Estado = Seguridad;
 }
 
 void function_alarma_seguridad(void){
     LCD_Clear();
-    LCD_String_xy(0,0,"SE TE ESTAN");
-    LCD_String_xy(0,1,"METIENDO");
+    LCD_String_xy(0,0,"ALARMA SECURITY");
     
-    for(int i = 0; i == 5; i++){
+    for(int i = 0; i < 5; i++){
         PORTE = 0x04;
-        __delay_ms(1000);
+        __delay_ms(500);
         PORTE = 0x00;
-        __delay_ms(1000);
+        __delay_ms(500);
     }
-    __delay_ms(2000);
     LCD_Clear();
     Estado = Monitoreo;
 }
@@ -215,7 +224,7 @@ void function_alarma_seguridad(void){
 void function_alarma_ambiental(void){   
     LCD_Clear();
     LCD_String_xy(0,0,"ALARMA AMBIENTE");
-    for(int i = 0; i == 5; i++){
+    for(int i = 0; i < 5; i++){
         PORTE = 0x04;
         __delay_ms(1000);
         PORTE = 0x00;
@@ -224,3 +233,15 @@ void function_alarma_ambiental(void){
     LCD_Clear();
     Estado = Ambiental;
 }
+
+void __interrupt() Timer_ISR(){
+    count_timer_lms++;
+    TMR1 = 0xFC16;
+    Pulse = ~Pulse;
+    PIR1bits.TMR1IF = 0;
+}
+
+void Timer1_start(){
+    
+}
+
