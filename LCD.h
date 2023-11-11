@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-
+#define RS RD0
 #define RS RD0  /*PIN 0 of PORTD is assigned for register select Pin of LCD*/
 #define EN RD1  /*PIN 1 of PORTD is assigned for enable Pin of LCD */
 #define ldata PORTD  /*PORTD(PD4-PD7) is assigned for LCD Data Output*/ 
